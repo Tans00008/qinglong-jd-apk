@@ -17,14 +17,13 @@ import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import cn.moon.ql.QLApplication;
+
 import cn.moon.ql.R;
-import cn.moon.ql.data.QLApiClient;
+import cn.moon.ql.SettingsActivity;
+import cn.moon.ql.api.QlApi;
 import cn.moon.ql.data.model.JDCookie;
 import cn.moon.ql.data.model.QLEnvData;
-import cn.moon.ql.data.model.QLLoginData;
-import cn.moon.ql.data.model.QLStoreData;
-import cn.moon.ql.ui.ql.QLLoginActivity;
+import cn.moon.ql.util.PreferenceUtil;
 
 import static cn.moon.ql.Config.JD_URL;
 import static cn.moon.ql.data.model.JDCookie.JD_COOKIE;
@@ -34,7 +33,6 @@ public class MainActivity extends AppCompatActivity {
 
     private WebView webView;
     private Button uploadCookieButton;
-    private Button loginQingLongButton;
 
     Handler handler = new Handler() {
         @Override
@@ -45,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
-    private QLApiClient qlApiClient = new QLApiClient();
+    private QlApi qlApi = new QlApi();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,7 +54,6 @@ public class MainActivity extends AppCompatActivity {
 
         webView = findViewById(R.id.webView);
         uploadCookieButton = findViewById(R.id.uploadCookieButton);
-        loginQingLongButton = findViewById(R.id.setQingLongButton);
         Button clearWebviewBtn = findViewById(R.id.clear_webview);
 
         // 设置 WebView 的基本属性
@@ -68,9 +65,16 @@ public class MainActivity extends AppCompatActivity {
 
 
         uploadCookieButton.setOnClickListener(v -> uploadCookie());
-        loginQingLongButton.setOnClickListener(v -> showQingLongLogin());
         clearWebviewBtn.setOnClickListener(v->clearWebview());
 
+        findViewById(R.id.btn_setting).setOnClickListener(v->{
+            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+            startActivity(intent);
+        });
+
+
+        String cid = PreferenceUtil.getInstance().get("cid");
+        Toast.makeText(getBaseContext(),"cid="+cid, Toast.LENGTH_SHORT).show();;
     }
 
 
@@ -82,19 +86,7 @@ public class MainActivity extends AppCompatActivity {
         handler.sendMessage(handler.obtainMessage(-1, msg));
     }
 
-    private void err(Exception e) {
-        String msg = e.getMessage();
-        if (msg == null) {
-            msg = e.getClass().getSimpleName();
-        }
-        handler.sendMessage(handler.obtainMessage(-1, msg));
-    }
-
     private void uploadCookie() {
-        if (!QLApplication.getQLStoreData().isLoggedQL()) {
-            err("☹️请先登录青龙服务器");
-            return;
-        }
         JDCookie jdCookie = getJDCookie();
         if (jdCookie == null) {
             err("☹️请先登录JD账号");
@@ -111,13 +103,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void showQingLongLogin() {
-        // 创建一个意图，指定要跳转到的活动
-        Intent intent = new Intent(MainActivity.this, QLLoginActivity.class);
 
-        // 启动活动
-        startActivity(intent);
-    }
 
     private JDCookie getJDCookie() {
         String cookies = CookieManager.getInstance().getCookie(webView.getUrl());
@@ -144,8 +130,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void doUploadJDCookie(JDCookie jdCookie) {
         try {
-            QLStoreData qlStoreData = QLApplication.getQLStoreData();
-            List<QLEnvData> envDataList = qlApiClient.listEnv(JD_COOKIE, qlStoreData.getSettingsData(), qlStoreData.getLoginData());
+            List<QLEnvData> envDataList = qlApi.listEnv();
             Integer id = null;
             String remarks = null;
             for (QLEnvData envData : envDataList) {
@@ -165,11 +150,11 @@ public class MainActivity extends AppCompatActivity {
 
             QLEnvData updateEnv = new QLEnvData(JD_COOKIE, jdCookie.joinPinAndKey(), finalremarks);
             if (id == null) {
-                qlApiClient.addEnv(updateEnv, qlStoreData.getSettingsData(), qlStoreData.getLoginData());
+                qlApi.addEnv(updateEnv);
                 info(String.format("🎉添加JDCookie【%s】成功", jdCookie.getPtPin()));
             } else {
                 updateEnv.setId(id);
-                qlApiClient.updateEnv(updateEnv, qlStoreData.getSettingsData(), qlStoreData.getLoginData());
+                qlApi.updateEnv(updateEnv);
                 info(String.format("🎉更新JDCookie【%s】成功", jdCookie.getPtPin()));
             }
         } catch (Exception e) {
@@ -178,11 +163,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void clearWebview(){
-        CookieManager.getInstance().removeAllCookies(new ValueCallback<Boolean>() {
-            @Override
-            public void onReceiveValue(Boolean aBoolean) {
-                // Cookie清除完成后的操作
-            }
+        CookieManager.getInstance().removeAllCookies(aBoolean -> {
+
         });
         CookieManager.getInstance().flush();
 

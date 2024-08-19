@@ -20,11 +20,14 @@
         android:layout_alignParentBottom="true"
         android:orientation="vertical">
 
+
         <Button
-            android:id="@+id/setQingLongButton"
+            android:id="@+id/btn_setting"
             android:layout_width="300dp"
             android:layout_height="wrap_content"
-            android:text="@string/qinglong_login_name" />
+            android:text="@string/btn_setting"
+            />
+
 
         <Button
             android:id="@+id/uploadCookieButton"
