@@ -22,12 +22,6 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-        
-    - name: Bump version and push tag
-      uses: anothrNick/github-tag-action@v1 
-      env:
-        GITHUB_TOKEN: ${{ secrets.TOKEN }} 
-        WITH_V: false
 
     - name: 打包
       run: |
@@ -39,4 +33,3 @@ jobs:
       with:
         files: |
           app/build/outputs/apk/ci/**/*.*
-        tag_name: ${{ steps.bump.outputs.new_tag }}
