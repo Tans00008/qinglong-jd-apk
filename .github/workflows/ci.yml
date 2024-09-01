@@ -24,11 +24,10 @@ jobs:
         distribution: 'temurin'
         
     - name: Bump version and push tag
-        id: bump
-        uses: anothrNick/github-tag-action@v1 # Don't use @master or @v1 unless you're happy to test the latest version
-        env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }} # if you don't want to set write permissions use a PAT token
-          WITH_V: false
+      uses: anothrNick/github-tag-action@v1 
+      env:
+        GITHUB_TOKEN: ${{ secrets.TOKEN }} 
+        WITH_V: false
 
     - name: 打包
       run: |
